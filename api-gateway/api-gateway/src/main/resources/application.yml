@@ -1,0 +1,75 @@
+spring:
+  application:
+    name: api-gateway
+
+  cloud:
+    gateway:
+      # -----------------------------------------------
+      # Global CORS
+      # -----------------------------------------------
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins:
+              - "http://localhost:3000"
+              - "http://localhost:4000"
+            allowedMethods: ["*"]
+            allowedHeaders: ["*"]
+            exposedHeaders: ["Authorization"]
+            allowCredentials: true
+
+      # -----------------------------------------------
+      # Routes
+      # lb:// prefix uses Eureka to resolve service names
+      # -----------------------------------------------
+      routes:
+
+        # Auth — public, no JWT filter
+        - id: auth-service
+          uri: lb://AUTH-SERVICE
+          predicates:
+            - Path=/auth/**
+
+        # User — protected
+        - id: user-service
+          uri: lb://USER-SERVICE
+          predicates:
+            - Path=/api/users/**
+          filters:
+            - name: JwtAuthFilter
+
+
+        # Block all /internal/** — never forwarded externally
+        - id: block-internal
+          uri: lb://USER-SERVICE
+          predicates:
+            - Path=/internal/**
+          filters:
+            - name: BlockInternalFilter
+
+server:
+  port: 8080
+
+# -----------------------------------------------
+# Eureka
+# -----------------------------------------------
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+
+# -----------------------------------------------
+# JWT secret (must match auth-service)
+# -----------------------------------------------
+app:
+  jwt:
+    secret: wpembytrwcvnryxksdbqwjebruyGHyudqgwveytrtrCSnwifoesarjbwe
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    com.twitter.gatewayservice: DEBUG

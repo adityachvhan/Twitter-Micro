@@ -1,0 +1,27 @@
+package com.twitter.authservice.model;
+
+import jakarta.persistence.*;
+import lombok.Data;
+
+/**
+ * Auth-service only stores credentials — email and the BCrypt-hashed password.
+ * All profile data (name, image, bio …) lives in user-service / user_db.
+ */
+@Entity
+@Table(name = "auth_credentials")
+@Data
+public class AuthCredential {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false, unique = true)
+    private String email;
+
+    /** BCrypt hashed. Plain-text password is NEVER stored. */
+    private String password;
+
+    /** True when the account was created via Google OAuth. No password is set in that case. */
+    private boolean loginWithGoogle = false;
+}

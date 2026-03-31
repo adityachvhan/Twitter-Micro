@@ -1,0 +1,105 @@
+package com.twitter.authservice.service;
+
+import com.twitter.authservice.config.JwtTokenProvider;
+import com.twitter.authservice.dto.AuthDtos;
+import com.twitter.authservice.exception.AuthException;
+import com.twitter.authservice.model.AuthCredential;
+import com.twitter.authservice.repository.AuthCredentialRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class AuthService {
+
+    private final AuthCredentialRepository credentialRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final CustomUserDetailsService userDetailsService;
+    private final RestTemplate restTemplate;
+
+    @Value("${app.user-service.url}")
+    private String userServiceUrl;
+
+    // -----------------------------------------------
+    // Signup
+    // -----------------------------------------------
+
+    @Transactional
+    public AuthDtos.AuthResponse signup(AuthDtos.SignupRequest req) throws AuthException {
+        // 1. Guard duplicate email
+        if (credentialRepository.findByEmail(req.getEmail()).isPresent()) {
+            throw new AuthException("Email already registered: " + req.getEmail());
+        }
+
+        // 2. Persist credentials in auth_db
+        AuthCredential credential = new AuthCredential();
+        credential.setEmail(req.getEmail());
+        credential.setPassword(passwordEncoder.encode(req.getPassword()));
+        credentialRepository.save(credential);
+
+        // 3. Create profile in user-service (fire-and-forget — errors are logged, not fatal)
+        createUserProfile(req);
+
+        // 4. Issue JWT
+        String token = jwtTokenProvider.generateToken(req.getEmail());
+        log.info("Signup successful for {}", req.getEmail());
+        return new AuthDtos.AuthResponse(token, true, "Signup successful");
+    }
+
+    // -----------------------------------------------
+    // Signin
+    // -----------------------------------------------
+
+    public AuthDtos.AuthResponse signin(AuthDtos.SigninRequest req) {
+        UserDetails userDetails = userDetailsService.loadUserByUsername(req.getEmail());
+
+        if (!passwordEncoder.matches(req.getPassword(), userDetails.getPassword())) {
+            throw new BadCredentialsException("Invalid email or password.");
+        }
+
+        String token = jwtTokenProvider.generateToken(req.getEmail());
+        log.info("Signin successful for {}", req.getEmail());
+        return new AuthDtos.AuthResponse(token, true, "Signin successful");
+    }
+
+    // -----------------------------------------------
+    // Internal helpers
+    // -----------------------------------------------
+
+    /**
+     * Calls user-service POST /internal/users to create the profile record.
+     * This is a best-effort call — if user-service is temporarily down,
+     * we log the error but don't roll back the auth record.
+     * A retry mechanism (e.g. outbox pattern) can be added later.
+     */
+    private void createUserProfile(AuthDtos.SignupRequest req) {
+        try {
+            AuthDtos.CreateUserProfileRequest profileReq = new AuthDtos.CreateUserProfileRequest();
+            profileReq.setEmail(req.getEmail());
+            profileReq.setFullName(req.getFullName());
+            profileReq.setBirthDate(req.getBirthDate());
+            profileReq.setLoginWithGoogle(false);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<AuthDtos.CreateUserProfileRequest> entity = new HttpEntity<>(profileReq, headers);
+
+            restTemplate.postForObject(userServiceUrl + "/internal/users", entity, Object.class);
+            log.info("User profile created in user-service for {}", req.getEmail());
+        } catch (Exception e) {
+            log.error("Failed to create user profile in user-service for {}: {}", req.getEmail(), e.getMessage());
+        }
+    }
+}

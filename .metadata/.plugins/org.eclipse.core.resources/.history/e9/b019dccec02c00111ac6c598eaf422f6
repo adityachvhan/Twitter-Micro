@@ -1,0 +1,18 @@
+package com.twitter.user_service.controller;
+
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.twitter.user_service.service.UserService;
+
+@RestController
+@RequestMapping("/auth/users")
+public class AuthController {
+
+	private UserService userService;
+
+	public AuthController(UserService userService) {
+		this.userService = userService;
+	}
+
+}

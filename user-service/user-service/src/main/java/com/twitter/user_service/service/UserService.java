@@ -1,0 +1,11 @@
+package com.twitter.user_service.service;
+
+import com.twitter.user_service.exception.UserException;
+import com.twitter.user_service.model.User;
+
+public interface UserService {
+
+	User findUserByEmail(String email) throws UserException;
+
+	User createUser(User user) throws UserException;
+}

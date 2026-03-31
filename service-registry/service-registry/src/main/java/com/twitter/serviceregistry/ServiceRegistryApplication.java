@@ -1,0 +1,19 @@
+package com.twitter.serviceregistry;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.netflix.eureka.server.EnableEurekaServer;
+
+/**
+ * Dashboard available at: http://localhost:8761
+ * All microservices register themselves here on startup.
+ * The API gateway uses Eureka to discover service locations
+ * instead of hardcoded URLs.
+ */
+@SpringBootApplication
+@EnableEurekaServer
+public class ServiceRegistryApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(ServiceRegistryApplication.class, args);
+    }
+}

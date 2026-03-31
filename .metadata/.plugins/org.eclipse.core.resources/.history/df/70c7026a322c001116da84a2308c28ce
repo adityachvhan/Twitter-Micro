@@ -1,0 +1,21 @@
+package com.twitter.user_service.service;
+
+import com.twitter.user_service.exception.UserException;
+import com.twitter.user_service.model.User;
+import com.twitter.user_service.repository.UserRepository;
+
+public class UserServiceImpl implements UserService {
+
+	private UserRepository userRepository;
+
+	public UserServiceImpl(UserRepository userRepository) {
+		this.userRepository = userRepository;
+	}
+
+	@Override
+	public User findUserByEmail(String email) throws UserException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+}

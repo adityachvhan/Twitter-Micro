@@ -1,0 +1,5 @@
+package com.twitter.user_service.config;
+
+public class SecurityConfig {
+
+}

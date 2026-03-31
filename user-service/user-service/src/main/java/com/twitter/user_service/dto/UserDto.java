@@ -1,0 +1,50 @@
+package com.twitter.user_service.dto;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class UserDto {
+
+	private Long id;
+
+	private String fullName;
+
+	private String email;
+
+	private String image;
+
+	private String backgroundImage;
+
+	private String bio;
+
+	private String location;
+
+	private String website;
+
+	private String birthDate;
+
+	private String mobile;
+
+	private boolean loginWithGoogle;
+
+	private boolean verified;
+
+	/** True when the request is made by the profile owner. */
+	private boolean reqUser;
+
+	/** True when the requesting user already follows this user. */
+	private boolean followed;
+
+	private List<UserDto> followers = new ArrayList<>();
+
+	private List<UserDto> following = new ArrayList<>();
+
+	
+}
