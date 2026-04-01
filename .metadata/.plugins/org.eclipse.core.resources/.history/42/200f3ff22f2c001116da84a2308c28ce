@@ -1,5 +1,0 @@
-package com.twitter.user_service.request;
-
-public class VerifyUserRequest {
-
-}

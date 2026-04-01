@@ -1,0 +1,56 @@
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      httpclient:
+        connect-timeout: 5000
+        response-timeout: 5s
+      globalcors:
+        corsConfigurations:
+          "[/**]":
+            allowedOrigins:
+              - "http://localhost:3000"
+              - "http://localhost:4000"
+            allowedMethods: ["*"]
+            allowedHeaders: ["*"]
+            exposedHeaders: ["Authorization"]
+            allowCredentials: true
+      routes:
+        - id: auth-service
+          uri: lb://auth-service
+          predicates:
+            - Path=/auth/**
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/users/**
+          filters:
+            - name: JwtAuthFilter
+        - id: block-internal
+          uri: lb://user-service
+          predicates:
+            - Path=/internal/**
+          filters:
+            - name: BlockInternalFilter
+
+server:
+  port: 8080
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://service-registry:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+
+app:
+  jwt:
+    secret: your-secret-key
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    com.twitter.gatewayservice: DEBUG
